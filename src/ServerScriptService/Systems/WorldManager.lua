@@ -32,6 +32,7 @@ WorldManager.Events = {
 
 local lastTravel: { [Player]: number } = {}
 local portalDebounce: { [Player]: number } = {}
+local arrivalGrace: { [Player]: number } = {} -- anti "retour immédiat" au lobby
 local occupancy: { [number]: number } = {}
 local firstJoinDone: { [Player]: boolean } = {}
 
@@ -145,6 +146,9 @@ function WorldManager.travel(player: Player, worldIndex: number, silent: boolean
 		end
 	end)
 
+	-- 3 s de grâce : on ignore les pads/portails juste après une arrivée
+	arrivalGrace[player] = os.clock() + 3
+
 	WorldManager.Events.WorldChanged:Fire(player, worldIndex)
 	DataManager.notify(player)
 	return true
@@ -187,6 +191,9 @@ local function onPortalTouched(player: Player, worldIndex: number?)
 	end
 	local now = os.clock()
 	if portalDebounce[player] and now - portalDebounce[player] < 2 then
+		return
+	end
+	if arrivalGrace[player] and now < arrivalGrace[player] then
 		return
 	end
 	portalDebounce[player] = now
@@ -335,6 +342,7 @@ function WorldManager.start()
 		end
 		lastTravel[player] = nil
 		portalDebounce[player] = nil
+		arrivalGrace[player] = nil
 		firstJoinDone[player] = nil
 	end)
 

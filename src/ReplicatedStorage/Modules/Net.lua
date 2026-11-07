@@ -37,12 +37,12 @@ Net.RemoteEvents = {
 	"SetSetting",           -- (key: string, value: any)
 	"ClientReady",          -- ()
 	"PlayEmote",            -- (emote: string)
+	"ComparePower",         -- (userId: number) comparaison de puissance
 
 	-- Serveur → Client
 	"ProfileUpdated",       -- (profile: table)
 	"Notify",               -- (text, colorHex?, icon?)
 	"EffectBurst",          -- (position: Vector3, colorHex: string, amount: number)
-	"EffectFly",            -- (from: Vector3, colorHex: string)
 	"EventUpdate",          -- (eventId: string?, endsAt: number?, message: string?)
 	"EggResult",            -- (rarity, petId, name, mult, eggId, isNew)
 	"LeaderboardData",      -- (global: table, server: table)

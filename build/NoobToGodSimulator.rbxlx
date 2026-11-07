@@ -1125,12 +1125,12 @@ Net.RemoteEvents = {
 	"SetSetting",           -- (key: string, value: any)
 	"ClientReady",          -- ()
 	"PlayEmote",            -- (emote: string)
+	"ComparePower",         -- (userId: number) comparaison de puissance
 
 	-- Serveur → Client
 	"ProfileUpdated",       -- (profile: table)
 	"Notify",               -- (text, colorHex?, icon?)
 	"EffectBurst",          -- (position: Vector3, colorHex: string, amount: number)
-	"EffectFly",            -- (from: Vector3, colorHex: string)
 	"EventUpdate",          -- (eventId: string?, endsAt: number?, message: string?)
 	"EggResult",            -- (rarity, petId, name, mult, eggId, isNew)
 	"LeaderboardData",      -- (global: table, server: table)
@@ -2253,6 +2253,7 @@ function CharacterSystem.refresh(player: Player)
 	end
 
 	local targetScale = tier.Size * CharacterSystem.sizeMultiplier
+	local firstApplication = playerState.tier == nil
 	local tierChanged = playerState.tier ~= tierIndex
 	local scaleChanged = playerState.scale == nil or math.abs(playerState.scale - targetScale) &gt; 0.01
 	local titleChanged = playerState.title ~= profile.titleSelected
@@ -2274,9 +2275,12 @@ function CharacterSystem.refresh(player: Player)
 		playerState.tier = tierIndex
 		character:SetAttribute("TransformTier", tierIndex)
 		character:SetAttribute("TransformName", tier.Name)
-		Net.event("Transformation"):FireClient(player, tierIndex)
-		if tierIndex &gt; 1 then
-			Net.event("PlaySound"):FireClient(player, "transform", 0.55)
+		if not firstApplication then
+			-- pas d'annonce à la (re)naissance : uniquement lors d'un vrai changement
+			Net.event("Transformation"):FireClient(player, tierIndex)
+			if tierIndex &gt; 1 then
+				Net.event("PlaySound"):FireClient(player, "transform", 0.55)
+			end
 		end
 	end
 
@@ -2572,6 +2576,12 @@ function CollectSystem.spawnOne(worldIndex: number, forcedObjectId: string?, for
 	local position = forcedPosition or findFreePosition(worldIndex)
 	if not position then
 		return nil
+	end
+	-- Les gros objets (maison, bâtiment, planète…) ne doivent pas être
+	-- enterrés : on remonte leur centre au-dessus du sol.
+	local minY = (objectData.Size.Y * 0.5) + 1
+	if position.Y &lt; minY then
+		position = Vector3.new(position.X, minY, position.Z)
 	end
 
 	local golden = math.random() &lt; CollectSystem.goldenChance
@@ -3390,8 +3400,9 @@ function DataManager.save(player: Player, releaseLock: boolean?): boolean
 	local key = getKey(player)
 	local store = getStore(GameConfig.DataStoreName)
 
+	local wrote = false
 	local ok = retry(SAVE_ATTEMPTS, 1.5, function()
-		return store:UpdateAsync(key, function(oldEntry)
+		local result = store:UpdateAsync(key, function(oldEntry)
 			local entry = oldEntry
 			if type(entry) ~= "table" then
 				entry = {}
@@ -3414,9 +3425,13 @@ function DataManager.save(player: Player, releaseLock: boolean?): boolean
 			end
 			return entry
 		end)
+		if result ~= nil then
+			wrote = true
+		end
+		return result
 	end)
 
-	if not ok then
+	if not ok or not wrote then
 		warn("[DataManager] sauvegarde échouée pour " .. player.Name)
 		return false
 	end
@@ -4764,6 +4779,11 @@ function PetSystem.openEgg(player: Player, eggId: any, amount: any): number
 	local available, reason = isEggAvailable(player, profile, eggId)
 	if not available then
 		Net.event("Notify"):FireClient(player, "🔒 " .. reason, "ff6b6b", "🔒")
+		return 0
+	end
+
+	if egg.FreeOnePerPlayer and profile.freeEggsTaken[eggId] then
+		Net.event("Notify"):FireClient(player, "Tu as déjà utilisé ton œuf gratuit ! Ouvre-en un autre.", "ff9f43", "🥚")
 		return 0
 	end
 
@@ -6246,12 +6266,16 @@ local function buildWorld(index: number): any
 		})
 	end
 
-	-- Zone d'arrivée + portail de retour
+	-- Zone d'arrivée
 	local spawnPosition = center + Vector3.new(0, 6, size / 2 - 70)
+
+	-- Portail de retour : VOLONTAIREMENT décalé de 50 studs du spawn,
+	-- sinon le joueur réapparaît dessus et retourne au lobby en boucle.
+	local returnPosition = center + Vector3.new(0, 0, size / 2 - 18)
 	local returnPad = neon(folder, {
 		Name = "ReturnPad",
 		Size = Vector3.new(36, 1, 36),
-		Position = spawnPosition - Vector3.new(0, 5.5, 0),
+		Position = returnPosition + Vector3.new(0, 0.5, 0),
 		Color = Color3.fromRGB(255, 120, 190),
 		Transparency = 0.2,
 	})
@@ -6264,7 +6288,7 @@ local function buildWorld(index: number): any
 	local returnField = neon(returnModel, {
 		Name = "Field",
 		Size = Vector3.new(20, 26, 1),
-		Position = spawnPosition + Vector3.new(0, 10, 26),
+		Position = returnPosition + Vector3.new(0, 13, 22),
 		Color = Color3.fromRGB(255, 120, 190),
 		Transparency = 0.5,
 	})
@@ -6473,6 +6497,7 @@ WorldManager.Events = {
 
 local lastTravel: { [Player]: number } = {}
 local portalDebounce: { [Player]: number } = {}
+local arrivalGrace: { [Player]: number } = {} -- anti "retour immédiat" au lobby
 local occupancy: { [number]: number } = {}
 local firstJoinDone: { [Player]: boolean } = {}
 
@@ -6586,6 +6611,9 @@ function WorldManager.travel(player: Player, worldIndex: number, silent: boolean
 		end
 	end)
 
+	-- 3 s de grâce : on ignore les pads/portails juste après une arrivée
+	arrivalGrace[player] = os.clock() + 3
+
 	WorldManager.Events.WorldChanged:Fire(player, worldIndex)
 	DataManager.notify(player)
 	return true
@@ -6628,6 +6656,9 @@ local function onPortalTouched(player: Player, worldIndex: number?)
 	end
 	local now = os.clock()
 	if portalDebounce[player] and now - portalDebounce[player] &lt; 2 then
+		return
+	end
+	if arrivalGrace[player] and now &lt; arrivalGrace[player] then
 		return
 	end
 	portalDebounce[player] = now
@@ -6776,6 +6807,7 @@ function WorldManager.start()
 		end
 		lastTravel[player] = nil
 		portalDebounce[player] = nil
+		arrivalGrace[player] = nil
 		firstJoinDone[player] = nil
 	end)
 
@@ -10912,7 +10944,7 @@ local function showNextEgg()
 	holder.BackgroundColor3 = C.Background
 	holder.BackgroundTransparency = 0.35
 	holder.BorderSizePixel = 0
-	holder.ZIndex = 40
+	holder.ZIndex = 60
 	holder.Parent = screenGui
 	eggRevealHolder = holder
 
@@ -10922,7 +10954,7 @@ local function showNextEgg()
 	card.AnchorPoint = Vector2.new(0.5, 0.5)
 	card.BackgroundColor3 = C.Panel
 	card.BorderSizePixel = 0
-	card.ZIndex = 41
+	card.ZIndex = 61
 	card.Parent = holder
 	UILib.corner(card, UIConfig.Radius.Large)
 	UILib.stroke(card, rarity.Color, 4, 0)
@@ -10939,7 +10971,7 @@ local function showNextEgg()
 		Font = UIConfig.FontTitle,
 		TextSize = 24,
 		Color = rarity.Color,
-		ZIndex = 42,
+		ZIndex = 62,
 	})
 	title.Name = "Title"
 
@@ -10948,7 +10980,7 @@ local function showNextEgg()
 		Position = UDim2.fromOffset(150, 58),
 		Font = UIConfig.FontTitle,
 		TextScaled = true,
-		ZIndex = 42,
+		ZIndex = 62,
 	})
 	emoji.Name = "Emoji"
 	UILib.pulse(emoji, 1.2)
@@ -10960,7 +10992,7 @@ local function showNextEgg()
 		TextSize = 22,
 		Color = C.Text,
 		TextWrapped = true,
-		ZIndex = 42,
+		ZIndex = 62,
 	})
 	name.Name = "Name"
 
@@ -10970,7 +11002,7 @@ local function showNextEgg()
 		Font = UIConfig.FontBold,
 		TextSize = 14,
 		Color = rarity.Color,
-		ZIndex = 42,
+		ZIndex = 62,
 	})
 	rarityLabel.Name = "Rarity"
 
@@ -10980,7 +11012,7 @@ local function showNextEgg()
 		Font = UIConfig.FontBold,
 		TextSize = 14,
 		Color = C.Gold,
-		ZIndex = 42,
+		ZIndex = 62,
 	})
 	multLabel.Name = "Mult"
 
@@ -10990,7 +11022,7 @@ local function showNextEgg()
 		Color = rarity.Color,
 		TextColor = C.TextDark,
 		Radius = UIConfig.Radius.Pill,
-		ZIndex = 43,
+		ZIndex = 63,
 	})
 
 	local function closeReveal()
@@ -11015,7 +11047,7 @@ local function showNextEgg()
 	blocker.BackgroundTransparency = 1
 	blocker.Text = ""
 	blocker.AutoButtonColor = false
-	blocker.ZIndex = 40
+	blocker.ZIndex = 60
 	blocker.Parent = holder
 	blocker.MouseButton1Click:Connect(closeReveal)
 
@@ -11128,6 +11160,7 @@ function UIController.start()
 	stack.Position = UDim2.new(1, -16, 1, -110)
 	stack.AnchorPoint = Vector2.new(1, 1)
 	stack.BackgroundTransparency = 1
+	stack.ZIndex = 80 -- visible même quand une modale est ouverte
 	stack.Parent = gui
 	toastStack = stack
 	UILib.setToastStack(stack)

@@ -199,6 +199,7 @@ function CharacterSystem.refresh(player: Player)
 	end
 
 	local targetScale = tier.Size * CharacterSystem.sizeMultiplier
+	local firstApplication = playerState.tier == nil
 	local tierChanged = playerState.tier ~= tierIndex
 	local scaleChanged = playerState.scale == nil or math.abs(playerState.scale - targetScale) > 0.01
 	local titleChanged = playerState.title ~= profile.titleSelected
@@ -220,9 +221,12 @@ function CharacterSystem.refresh(player: Player)
 		playerState.tier = tierIndex
 		character:SetAttribute("TransformTier", tierIndex)
 		character:SetAttribute("TransformName", tier.Name)
-		Net.event("Transformation"):FireClient(player, tierIndex)
-		if tierIndex > 1 then
-			Net.event("PlaySound"):FireClient(player, "transform", 0.55)
+		if not firstApplication then
+			-- pas d'annonce à la (re)naissance : uniquement lors d'un vrai changement
+			Net.event("Transformation"):FireClient(player, tierIndex)
+			if tierIndex > 1 then
+				Net.event("PlaySound"):FireClient(player, "transform", 0.55)
+			end
 		end
 	end
 

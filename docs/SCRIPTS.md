@@ -50,7 +50,8 @@ Convention de nommage (compatible Rojo et avec `tools/build_rbxlx.py`) :
   `Net.func()`). Ajouter un remote = ajouter une ligne dans `Net.RemoteEvents`.
 - **Connexions** : appelé par `Bootstrap` (init) et par tous les systèmes.
 - **Test** : après Play, `ReplicatedStorage.Remotes.Events` doit contenir
-  16 RemoteEvents et `Remotes.Functions` 3 RemoteFunctions.
+  31 RemoteEvents (16 client→serveur, 15 serveur→client) et
+  `Remotes.Functions` 3 RemoteFunctions.
 
 ### `ProfileTemplate` — ModuleScript
 - **Emplacement** : `ReplicatedStorage.Modules.ProfileTemplate`

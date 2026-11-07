@@ -100,7 +100,7 @@ local function showNextEgg()
 	holder.BackgroundColor3 = C.Background
 	holder.BackgroundTransparency = 0.35
 	holder.BorderSizePixel = 0
-	holder.ZIndex = 40
+	holder.ZIndex = 60
 	holder.Parent = screenGui
 	eggRevealHolder = holder
 
@@ -110,7 +110,7 @@ local function showNextEgg()
 	card.AnchorPoint = Vector2.new(0.5, 0.5)
 	card.BackgroundColor3 = C.Panel
 	card.BorderSizePixel = 0
-	card.ZIndex = 41
+	card.ZIndex = 61
 	card.Parent = holder
 	UILib.corner(card, UIConfig.Radius.Large)
 	UILib.stroke(card, rarity.Color, 4, 0)
@@ -127,7 +127,7 @@ local function showNextEgg()
 		Font = UIConfig.FontTitle,
 		TextSize = 24,
 		Color = rarity.Color,
-		ZIndex = 42,
+		ZIndex = 62,
 	})
 	title.Name = "Title"
 
@@ -136,7 +136,7 @@ local function showNextEgg()
 		Position = UDim2.fromOffset(150, 58),
 		Font = UIConfig.FontTitle,
 		TextScaled = true,
-		ZIndex = 42,
+		ZIndex = 62,
 	})
 	emoji.Name = "Emoji"
 	UILib.pulse(emoji, 1.2)
@@ -148,7 +148,7 @@ local function showNextEgg()
 		TextSize = 22,
 		Color = C.Text,
 		TextWrapped = true,
-		ZIndex = 42,
+		ZIndex = 62,
 	})
 	name.Name = "Name"
 
@@ -158,7 +158,7 @@ local function showNextEgg()
 		Font = UIConfig.FontBold,
 		TextSize = 14,
 		Color = rarity.Color,
-		ZIndex = 42,
+		ZIndex = 62,
 	})
 	rarityLabel.Name = "Rarity"
 
@@ -168,7 +168,7 @@ local function showNextEgg()
 		Font = UIConfig.FontBold,
 		TextSize = 14,
 		Color = C.Gold,
-		ZIndex = 42,
+		ZIndex = 62,
 	})
 	multLabel.Name = "Mult"
 
@@ -178,7 +178,7 @@ local function showNextEgg()
 		Color = rarity.Color,
 		TextColor = C.TextDark,
 		Radius = UIConfig.Radius.Pill,
-		ZIndex = 43,
+		ZIndex = 63,
 	})
 
 	local function closeReveal()
@@ -203,7 +203,7 @@ local function showNextEgg()
 	blocker.BackgroundTransparency = 1
 	blocker.Text = ""
 	blocker.AutoButtonColor = false
-	blocker.ZIndex = 40
+	blocker.ZIndex = 60
 	blocker.Parent = holder
 	blocker.MouseButton1Click:Connect(closeReveal)
 
@@ -316,6 +316,7 @@ function UIController.start()
 	stack.Position = UDim2.new(1, -16, 1, -110)
 	stack.AnchorPoint = Vector2.new(1, 1)
 	stack.BackgroundTransparency = 1
+	stack.ZIndex = 80 -- visible même quand une modale est ouverte
 	stack.Parent = gui
 	toastStack = stack
 	UILib.setToastStack(stack)

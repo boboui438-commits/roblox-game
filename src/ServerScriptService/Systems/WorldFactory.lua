@@ -695,12 +695,16 @@ local function buildWorld(index: number): any
 		})
 	end
 
-	-- Zone d'arrivée + portail de retour
+	-- Zone d'arrivée
 	local spawnPosition = center + Vector3.new(0, 6, size / 2 - 70)
+
+	-- Portail de retour : VOLONTAIREMENT décalé de 50 studs du spawn,
+	-- sinon le joueur réapparaît dessus et retourne au lobby en boucle.
+	local returnPosition = center + Vector3.new(0, 0, size / 2 - 18)
 	local returnPad = neon(folder, {
 		Name = "ReturnPad",
 		Size = Vector3.new(36, 1, 36),
-		Position = spawnPosition - Vector3.new(0, 5.5, 0),
+		Position = returnPosition + Vector3.new(0, 0.5, 0),
 		Color = Color3.fromRGB(255, 120, 190),
 		Transparency = 0.2,
 	})
@@ -713,7 +717,7 @@ local function buildWorld(index: number): any
 	local returnField = neon(returnModel, {
 		Name = "Field",
 		Size = Vector3.new(20, 26, 1),
-		Position = spawnPosition + Vector3.new(0, 10, 26),
+		Position = returnPosition + Vector3.new(0, 13, 22),
 		Color = Color3.fromRGB(255, 120, 190),
 		Transparency = 0.5,
 	})

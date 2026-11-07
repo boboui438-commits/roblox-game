@@ -224,6 +224,11 @@ function PetSystem.openEgg(player: Player, eggId: any, amount: any): number
 		return 0
 	end
 
+	if egg.FreeOnePerPlayer and profile.freeEggsTaken[eggId] then
+		Net.event("Notify"):FireClient(player, "Tu as déjà utilisé ton œuf gratuit ! Ouvre-en un autre.", "ff9f43", "🥚")
+		return 0
+	end
+
 	local isFree = egg.FreeOnePerPlayer and not profile.freeEggsTaken[eggId]
 	local totalPrice = 0
 	if not isFree then

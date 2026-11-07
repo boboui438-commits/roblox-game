@@ -191,6 +191,12 @@ function CollectSystem.spawnOne(worldIndex: number, forcedObjectId: string?, for
 	if not position then
 		return nil
 	end
+	-- Les gros objets (maison, bâtiment, planète…) ne doivent pas être
+	-- enterrés : on remonte leur centre au-dessus du sol.
+	local minY = (objectData.Size.Y * 0.5) + 1
+	if position.Y < minY then
+		position = Vector3.new(position.X, minY, position.Z)
+	end
 
 	local golden = math.random() < CollectSystem.goldenChance
 

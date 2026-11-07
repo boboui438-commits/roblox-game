@@ -291,8 +291,9 @@ function DataManager.save(player: Player, releaseLock: boolean?): boolean
 	local key = getKey(player)
 	local store = getStore(GameConfig.DataStoreName)
 
+	local wrote = false
 	local ok = retry(SAVE_ATTEMPTS, 1.5, function()
-		return store:UpdateAsync(key, function(oldEntry)
+		local result = store:UpdateAsync(key, function(oldEntry)
 			local entry = oldEntry
 			if type(entry) ~= "table" then
 				entry = {}
@@ -315,9 +316,13 @@ function DataManager.save(player: Player, releaseLock: boolean?): boolean
 			end
 			return entry
 		end)
+		if result ~= nil then
+			wrote = true
+		end
+		return result
 	end)
 
-	if not ok then
+	if not ok or not wrote then
 		warn("[DataManager] sauvegarde échouée pour " .. player.Name)
 		return false
 	end
