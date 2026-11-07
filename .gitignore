@@ -1,0 +1,17 @@
+# Fichiers Roblox Studio générés localement
+*.rbxl.lock
+*.rbxlx.lock
+.rbxl
+*.rbxl.bak
+
+# Dépendances JS de l'outil de vérification
+node_modules/
+package-lock.json
+
+# Divers OS / éditeurs
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+__pycache__/
+*.pyc

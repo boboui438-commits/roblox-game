@@ -1,0 +1,14 @@
+{
+  "name": "noob-to-god-simulator",
+  "version": "1.0.0",
+  "private": true,
+  "description": "NOOB TO GOD SIMULATOR - jeu Roblox complet en Luau",
+  "scripts": {
+    "check": "node tools/check_luau.js",
+    "build": "python3 tools/build_rbxlx.py",
+    "validate": "python3 tools/validate_config.py"
+  },
+  "devDependencies": {
+    "luau-parser": "^1.1.0"
+  }
+}
