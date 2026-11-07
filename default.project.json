@@ -1,0 +1,55 @@
+{
+  "name": "NoobToGodSimulator",
+  "tree": {
+    "$className": "DataModel",
+
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
+      "Modules": { "$path": "src/ReplicatedStorage/Modules" },
+      "Remotes": { "$className": "Folder" }
+    },
+
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "Bootstrap": { "$path": "src/ServerScriptService/Bootstrap.server.lua" },
+      "Systems": { "$path": "src/ServerScriptService/Systems" }
+    },
+
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
+        "$path": "src/StarterPlayer/StarterPlayerScripts"
+      }
+    },
+
+    "Workspace": {
+      "$className": "Workspace",
+      "$properties": {
+        "StreamingEnabled": true,
+        "Gravity": 196.2,
+        "FallenPartsDestroyHeight": -300
+      }
+    },
+
+    "Lighting": {
+      "$className": "Lighting",
+      "$properties": {
+        "Brightness": 2.5,
+        "ClockTime": 14,
+        "GlobalShadows": true,
+        "EnvironmentDiffuseScale": 0.4,
+        "EnvironmentSpecularScale": 0.4,
+        "FogEnd": 5000
+      }
+    },
+
+    "Players": {
+      "$className": "Players",
+      "$properties": {
+        "CharacterAutoLoads": true,
+        "RespawnTime": 3
+      }
+    }
+  }
+}
